@@ -70,7 +70,11 @@
 
 ### F0.4 — Theming system + base components
 - **Agent:** frontend-designer
-- **Status:** todo
+- **Status:** done (security ✅ performance ✅ tests 81/81 ✅ docs ✅)
+- **Notes:** brand color adjusted from base coral to AA-safe variants per mode
+  (documented in colors.ts). Perf debt noted, measure at F1: useTheme
+  registers an Appearance listener per consumer; useThemedStyles has no
+  cross-instance cache. Input nativeID fixed to useId() post-review.
 - **Scope:** `src/theme/` with semantic tokens (light + dark), ThemeProvider
   following system scheme, `useTheme` hook. Base components in
   `src/components/`: Button, Badge, Card, Input, EmptyState.

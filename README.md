@@ -82,9 +82,10 @@ considered done.
 ```
 app/                  # expo-router routes (presentation only)
 src/
-  components/         # shared UI components
+  components/         # shared UI: Button, Badge, Card, Input, EmptyState
   features/           # one folder per feature: {domain,data,hooks,components}
-  theme/              # semantic design tokens, light/dark
+  theme/              # semantic tokens (colors/spacing/radii/typography),
+                      # ThemeProvider, useTheme/useThemedStyles, MIN_TOUCH_TARGET
   lib/
     supabase.ts       # typed singleton client (throws if env vars are missing)
     database.types.ts # generated via `supabase gen types` — data layer only
@@ -93,8 +94,10 @@ docs/                 # BACKLOG.md, ARCHITECTURE.md, decisions/ (ADRs)
 supabase/             # config.toml, migrations/, seed.sql
 ```
 
-`src/components`, `src/features` and `src/theme` are empty skeletons right now;
-they fill up as features land.
+`src/features` is an empty skeleton right now; it fills up as features land.
+`src/theme/colors.ts` is the **only** file in `src/` allowed to contain hex
+colors — everything else consumes semantic tokens via `useTheme()` /
+`useThemedStyles()` (see `docs/ARCHITECTURE.md`, "Theming").
 
 Path alias: `@/*` resolves to `src/*` (see `tsconfig.json`).
 
@@ -136,6 +139,26 @@ it('shows the title', async () => {
 Forgetting the `await` produces confusing "element not found" failures. See
 `__tests__/app/index.test.tsx` for a working example.
 
+### Gotcha: forcing light/dark mode in tests
+
+Spying on `Appearance.getColorScheme` does **not** work under the `jest-expo`
+preset: it replaces the entire `useColorScheme` module with a mock, so the
+real `Appearance` module is never consulted. Use the helper instead:
+
+```tsx
+import { renderWithTheme, mockSystemColorScheme, THEME_MODES } from '../helpers/theme-testing';
+
+it.each(THEME_MODES)('renders in %s mode', async (mode) => {
+  await renderWithTheme(<Badge label="Perdido" variant="lost" />, mode);
+  // ...
+});
+```
+
+`mockSystemColorScheme(scheme)` sets the preset's mock directly (and
+`renderWithTheme` calls it for you). The mocked scheme persists for the rest
+of the test file, so set it explicitly in every test that depends on the mode.
+Details in `__tests__/src/helpers/theme-testing.tsx`.
+
 ## Documentation
 
 - `CLAUDE.md` — project context, product rules and engineering principles.
@@ -147,6 +170,7 @@ Forgetting the `await` produces confusing "element not found" failures. See
 ## Roadmap (very short)
 
 Done: project scaffold (F0.1), local Supabase environment + typed client
-(F0.2). Next up: database schema with PostGIS, theming tokens with light/dark
-support, CityProvider for multi-city scoping, then the core lost/found/sighted
-post flow. Track progress in `docs/BACKLOG.md`.
+(F0.2), database schema with PostGIS (F0.3), theming tokens with light/dark
+support + base UI components (F0.4). Next up: CityProvider for multi-city
+scoping, then the core lost/found/sighted post flow. Track progress in
+`docs/BACKLOG.md`.

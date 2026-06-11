@@ -1,7 +1,7 @@
 # Architecture
 
-High-level view of Huellitas as of F0.3 (initial schema). This document
-describes what the code does today; planned work is marked as such.
+High-level view of Huellitas as of F0.4 (theming + base components). This
+document describes what the code does today; planned work is marked as such.
 
 ## Client layers (Clean Architecture, pragmatic)
 
@@ -16,7 +16,38 @@ data layer.
 | Presentation | `src/features/X/components/`, `app/` | Render and dispatch actions only. No business logic, no direct Supabase calls. |
 
 Shared infrastructure: `src/lib/supabase.ts` (typed singleton client),
-`src/theme/` (semantic light/dark tokens), `app/` (expo-router routes).
+`src/theme/` (semantic light/dark tokens), `src/components/` (shared
+presentation-only UI: `Button`, `Badge`, `Card`, `Input`, `EmptyState`),
+`app/` (expo-router routes).
+
+## Theming
+
+All UI styling flows through semantic tokens in `src/theme/`:
+
+- **Tokens** — `colors.ts` (semantic light + dark palettes: surfaces, text,
+  brand, and per-post-type status colors `lost`/`found`/`sighted`, each with a
+  strong color for pins/icons and a Soft/Text pair for badges), `spacing.ts`
+  (base-4 scale `xs`–`xxl`), `radii.ts`, `typography.ts` (type scale without
+  color — composed with a color token at the call site). `theme.ts` assembles
+  them into `lightTheme`/`darkTheme` and exports `MIN_TOUCH_TARGET = 44`
+  (minimum touch target in pt, a11y rule).
+- **Provider** — `ThemeProvider` (mounted once in `app/_layout.tsx`) follows
+  the system color scheme via `useColorScheme`; there is no in-app theme
+  switch. Components consume the active theme through `useTheme()` or
+  `useThemedStyles(factory)` (memoized themed `StyleSheet`; define the factory
+  at module scope so its identity is stable). `useTheme()` falls back to the
+  system scheme outside a provider, so components stay renderable in
+  isolation. The splash screen ships a dark variant in `app.json`.
+- **No-hex rule** — `src/theme/colors.ts` is the only place in `src/` where
+  hex values are allowed (plus native config in `app.json`). Components never
+  hardcode colors; they consume tokens, including the `BadgeVariant` mapping
+  of post types to status tokens.
+- **AA enforcement** — WCAG contrast is verified by pure-math unit tests in
+  `__tests__/src/theme/contrast.test.ts`, run over **both** palettes: >= 4.5:1
+  for every text-bearing token pair, >= 3:1 for graphics-only status colors.
+  A palette change that breaks AA fails CI; the ratios documented in the
+  `colors.ts` header must match these measurements. Components are also
+  rendered and asserted in both modes (see Testing).
 
 ## Backend: Supabase
 
@@ -113,7 +144,11 @@ Two Jest suites, split by config:
 
 - **Unit** (`npm test`): jest-expo preset, `__tests__/**/*.test.ts(x)`
   excluding `__tests__/integration/`. Components, hooks, domain logic; no
-  network.
+  network. Shared components are tested in **both** color modes via
+  `renderWithTheme` from `__tests__/src/helpers/theme-testing.tsx`; that
+  helper is the only reliable way to force a scheme under jest-expo (it sets
+  the preset's `useColorScheme` module mock — spying on `Appearance` has no
+  effect because the preset replaces the whole module).
 - **Integration** (`npm run test:integration`): `jest.integration.config.js`,
   `--runInBand`, runs `__tests__/integration/`. Talks to the **local Supabase
   stack** (requires `supabase start`) and asserts the security boundaries:
