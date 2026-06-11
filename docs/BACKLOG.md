@@ -86,7 +86,10 @@
 
 ### F0.5 — CI pipeline
 - **Agent:** backend-engineer
-- **Status:** todo
+- **Status:** done (security ✅ with fixes applied · tests ✅ local · docs ✅)
+- **Notes:** integration job runs on PRs only (cost choice, documented in
+  YAML). permissions contents:read, persist-credentials false, CLI pinned
+  2.105.0, .nvmrc added. Real CI run pending first push to GitHub remote.
 - **Scope:** GitHub Actions workflow: typecheck + lint + jest on every push/PR.
 - **Acceptance criteria:**
   - Workflow YAML valid; runs `tsc --noEmit`, `lint`, `test` with npm cache.
