@@ -1,6 +1,10 @@
 # ADR 002 — `posts_nearby` as SECURITY DEFINER with inlined visibility predicate
 
-Status: accepted (F0.3, migration `20260611020106_initial_schema.sql`)
+Status: accepted (F0.3, migration `20260611020106_initial_schema.sql`).
+Amended in S1.1 (migration `20260611223009_posts_nearby_keyset_pagination.sql`):
+function recreated with a 10-parameter signature adding a keyset cursor
+(`p_after_distance`, `p_after_id`) — pure AND-conjunct, boundary predicate
+unchanged, re-reviewed by security-auditor per this ADR's mandate.
 
 ## Context
 

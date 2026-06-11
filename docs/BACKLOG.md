@@ -103,12 +103,12 @@
 
 ### S1.1 — RPC posts_nearby
 - **Agent:** database-architect
-- **Status:** todo
-- **Scope:** SQL function `posts_nearby(lat, lng, radius_m, city, filters…)`
-  with pagination (keyset or offset), filters: type, species, date range.
-  Scoped to active city. Returns posts + first approved photo.
-- **Acceptance criteria:** uses GiST index (EXPLAIN verified), respects RLS,
-  never returns unapproved media; unit-tested with seed data.
+- **Status:** done (core RPC shipped in F0.3; S1.1 added keyset pagination,
+  migration 20260611223009 — security ✅ re-review per ADR 002, perf ✅
+  EXPLAIN GiST verified, tests 81 unit + 20 integration ✅)
+- **Notes for S1.2:** data layer must send cursor fields together-or-neither
+  (half cursor silently resets to page 1); integration tests should add
+  multi-page keyset cases with distance ties (security re-review request).
 
 ### S1.2 — Posts data layer + usePosts hook
 - **Agent:** backend-engineer

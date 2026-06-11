@@ -347,6 +347,8 @@ export type Database = {
         Args: {
           lat: number
           lng: number
+          p_after_distance?: number
+          p_after_id?: string
           p_city_id?: string
           p_limit?: number
           p_species?: Database["public"]["Enums"]["species"]
