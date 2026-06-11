@@ -24,7 +24,10 @@
 
 ### F0.2 — Supabase local environment
 - **Agent:** backend-engineer
-- **Status:** todo
+- **Status:** done (security ✅ performance ✅ tests 8/8 ✅ docs ✅)
+- **Notes:** `detectSessionInUrl: false` set per perf review; watch for Hermes
+  `URL` polyfill need on first real query (perf review, low); cloud-link
+  security checklist tracked under F0.2b.
 - **Scope:** Supabase CLI installed, `supabase init`, `supabase start` working
   against local Docker. Typed client in `src/lib/supabase.ts` reading URL/keys
   from env (`.env` gitignored, `.env.example` committed). `supabase link` to a
@@ -37,6 +40,14 @@
 ### F0.2b — Link cloud Supabase project
 - **Agent:** backend-engineer
 - **Status:** blocked (needs owner's Supabase access token / project ref)
+- **Security checklist before going cloud (from F0.2 audit):**
+  - [ ] `auth.email.enable_confirmations = true`
+  - [ ] `minimum_password_length >= 8` + `password_requirements = "letters_digits"`
+  - [ ] `api.auto_expose_new_tables = false` (explicit)
+  - [ ] Enable captcha (hcaptcha/turnstile) for signup
+  - [ ] `secure_password_change = true`
+  - [ ] Per-bucket file size limit (~10MiB) + `allowed_mime_types` when creating buckets
+  - [ ] Add app deep link scheme to auth redirect allow-list (exact, no wildcards)
 
 ### F0.3 — Migration 0001: multi-city schema + RLS + seed
 - **Agent:** database-architect

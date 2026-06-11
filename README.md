@@ -17,7 +17,7 @@ with a photo and a map location; neighbors nearby help reunite them.
 | --- | --- |
 | App | React Native 0.85 + Expo SDK 56 (managed), React 19.2, TypeScript (strict) |
 | Navigation | expo-router (file-based, entry: `expo-router/entry`) |
-| Backend | Supabase (Auth, Postgres + PostGIS, Storage, Edge Functions) — lands in F0.2 |
+| Backend | Supabase (Auth, Postgres + PostGIS, Storage, Edge Functions), local-first via Supabase CLI |
 | Server state | TanStack React Query (planned) |
 | Local state | Zustand (planned) |
 | Lint/format | ESLint (flat config, `eslint-config-expo`) + Prettier |
@@ -25,21 +25,41 @@ with a photo and a map location; neighbors nearby help reunite them.
 
 ## Getting started
 
-Requirements: Node 20+, npm, and the [Expo Go](https://expo.dev/go) app or an
-iOS Simulator / Android Emulator.
+### Prerequisites
+
+- Node 20+ and npm.
+- [Docker Desktop](https://www.docker.com/products/docker-desktop/) (running) —
+  the local Supabase stack is a set of containers.
+- [Supabase CLI](https://supabase.com/docs/guides/local-development) v2.105+:
+  `brew install supabase/tap/supabase`.
+- The [Expo Go](https://expo.dev/go) app, or an iOS Simulator / Android Emulator.
+
+### Setup
 
 ```bash
 git clone <repo-url> huellitas
 cd huellitas
 npm install
-npx expo start
+
+# 1. Start the local Supabase stack (project id: "huellitas", supabase/config.toml)
+supabase start
+
+# 2. Configure the app's environment
+cp .env.example .env
+supabase status   # copy "API URL" and the anon key into .env
+
+# 3. Run the app
+npx expo start    # then press i / a, or scan the QR with Expo Go
 ```
 
-Then press `i` (iOS Simulator), `a` (Android Emulator) or scan the QR code with
-Expo Go.
+`.env` is gitignored and holds `EXPO_PUBLIC_SUPABASE_URL` and
+`EXPO_PUBLIC_SUPABASE_ANON_KEY`; `.env.example` documents both. Supabase CLI
+2.x labels the anon key **"Publishable key"** in `supabase status` — that's
+the value you want.
 
-> Supabase local setup (CLI, migrations, seed) arrives with task F0.2 and will
-> be documented here once it exists.
+> **Security:** NEVER put the `service_role` / `sb_secret_*` key in an
+> `EXPO_PUBLIC_*` variable (those are bundled into the app and therefore
+> public) or in any committed file.
 
 ## Scripts
 
@@ -49,6 +69,9 @@ Expo Go.
 | `npm run typecheck` | `tsc --noEmit` against strict TypeScript |
 | `npm run lint` | ESLint over the whole project |
 | `npm test` | Jest test suite |
+| `supabase start` / `supabase stop` | Start / stop the local Supabase containers |
+| `supabase status` | Show local URLs and keys (source for `.env` values) |
+| `supabase gen types typescript --local > src/lib/database.types.ts` | Regenerate DB types — run after **every** migration |
 
 All three checks (`typecheck`, `lint`, `test`) must pass before a task is
 considered done.
@@ -61,16 +84,23 @@ src/
   components/         # shared UI components
   features/           # one folder per feature: {domain,data,hooks,components}
   theme/              # semantic design tokens, light/dark
-  lib/                # supabase client, helpers (database.types.ts lives here)
+  lib/
+    supabase.ts       # typed singleton client (throws if env vars are missing)
+    database.types.ts # generated via `supabase gen types` — data layer only
 __tests__/            # Jest tests, mirrors source layout (e.g. __tests__/app/)
 docs/                 # BACKLOG.md today; ARCHITECTURE.md, ADRs, API docs later
-supabase/             # migrations & seed — coming in F0.2
+supabase/             # config.toml (committed); migrations & seed land next
 ```
 
-`src/components`, `src/features`, `src/theme` and `src/lib` are empty skeletons
-right now; they fill up as features land.
+`src/components`, `src/features` and `src/theme` are empty skeletons right now;
+they fill up as features land.
 
 Path alias: `@/*` resolves to `src/*` (see `tsconfig.json`).
+
+Notes on `src/lib/`: the Supabase client does not persist sessions yet
+(`persistSession: false` — Sprint 2 adds auth with secure storage), and
+`database.types.ts` may only be imported from the data layer
+(`src/features/*/data/`), never from hooks or components.
 
 ### Layering rules (short version)
 
@@ -108,6 +138,7 @@ Forgetting the `await` produces confusing "element not found" failures. See
 
 ## Roadmap (very short)
 
-Next up: Supabase local environment + schema (F0.2), theming tokens with
-light/dark support, CityProvider for multi-city scoping, then the core
-lost/found/sighted post flow. Track progress in `docs/BACKLOG.md`.
+Done: project scaffold (F0.1), local Supabase environment + typed client
+(F0.2). Next up: database schema with PostGIS, theming tokens with light/dark
+support, CityProvider for multi-city scoping, then the core lost/found/sighted
+post flow. Track progress in `docs/BACKLOG.md`.
