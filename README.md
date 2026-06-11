@@ -77,6 +77,10 @@ the value you want.
 All three checks (`typecheck`, `lint`, `test`) must pass before a task is
 considered done.
 
+CI: a GitHub Actions workflow (`.github/workflows/ci.yml`) runs typecheck,
+lint and unit tests on every push to `main` and on PRs, plus the integration
+suite on PRs only. Status badge pending the first push to a GitHub remote.
+
 ## Project structure
 
 ```
@@ -165,12 +169,14 @@ Details in `__tests__/src/helpers/theme-testing.tsx`.
 - `PLAN.md` — overall plan; `docs/BACKLOG.md` — per-task status.
 - `docs/ARCHITECTURE.md` — high-level architecture, data model and security
   invariants; `docs/decisions/` — ADRs recording key technical decisions.
-- `docs/SPRINTS.md`, `docs/API.md` — created as the relevant work lands.
+- `docs/SPRINTS.md` — per-sprint changelog; `docs/API.md` — created as the
+  relevant work lands.
 
 ## Roadmap (very short)
 
-Done: project scaffold (F0.1), local Supabase environment + typed client
-(F0.2), database schema with PostGIS (F0.3), theming tokens with light/dark
-support + base UI components (F0.4). Next up: CityProvider for multi-city
-scoping, then the core lost/found/sighted post flow. Track progress in
+Done (Fase 0): project scaffold (F0.1), local Supabase environment + typed
+client (F0.2), database schema with PostGIS (F0.3), theming tokens with
+light/dark support + base UI components (F0.4), CI pipeline (F0.5). Next up:
+CityProvider for multi-city scoping, then the core lost/found/sighted post
+flow. Track progress in
 `docs/BACKLOG.md`.
