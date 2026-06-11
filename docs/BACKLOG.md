@@ -38,9 +38,13 @@
   - `.env.example` documents required variables.
 
 ### F0.2b — Link cloud Supabase project
-- **Agent:** backend-engineer
-- **Status:** blocked (needs owner's Supabase access token / project ref)
-- **Security checklist before going cloud (from F0.2 audit):**
+- **Agent:** backend-engineer (executed by orchestrator — operational task)
+- **Status:** done (2026-06-11). Linked to lpbiznftnivshevqrsjx, migration +
+  seed pushed, RLS smoke-tested against cloud (whatsapp/zone_alerts denied,
+  posts_nearby clamped). Auth-related checklist items below DEFERRED to the
+  Sprint 2 auth task (no auth flows exist yet); must be done before any
+  public/production use:
+- **Security checklist before production (from F0.2 audit):**
   - [ ] `auth.email.enable_confirmations = true`
   - [ ] `minimum_password_length >= 8` + `password_requirements = "letters_digits"`
   - [ ] `api.auto_expose_new_tables = false` (explicit)
