@@ -1,9 +1,48 @@
+# dependencies
 node_modules/
+
+# Expo
 .expo/
 dist/
+web-build/
+expo-env.d.ts
+
+# Native (generated folders, prebuild artifacts)
+/ios
+/android
+.kotlin/
+*.orig.*
+*.jks
+*.p8
+*.p12
+*.key
+*.mobileprovision
+
+# Metro
+.metro-health-check*
+
+# debug
+npm-debug.*
+yarn-debug.*
+yarn-error.*
+*.log
+
+# macOS
+.DS_Store
+*.pem
+
+# env
 .env
 .env.*
 !.env.example
-*.log
-.DS_Store
+.env*.local
+
+# typescript
+*.tsbuildinfo
+
+# Supabase
 supabase/.temp/
+
+# Firebase service files (future expo-notifications)
+google-services.json
+GoogleService-Info.plist

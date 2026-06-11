@@ -9,7 +9,10 @@
 
 ### F0.1 — Expo scaffold
 - **Agent:** frontend-designer
-- **Status:** todo
+- **Status:** done (security ✅ performance ✅ tests 3/3 ✅ docs ✅)
+- **Notes:** dark splash variant deferred to F0.4; web stack (react-native-web)
+  kept from template (harmless, revisit if CI cost matters); Jest + RNTL 14
+  set up here by test-engineer (RNTL 14 `render` is async).
 - **Scope:** create-expo-app (managed) with TypeScript strict + expo-router.
   ESLint + Prettier configured. Folder skeleton: `app/`, `src/components/`,
   `src/features/`, `src/theme/`, `src/lib/`, `supabase/`.
