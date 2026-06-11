@@ -34,16 +34,371 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      cities: {
+        Row: {
+          bounds: unknown
+          center: unknown
+          country_code: string
+          created_at: string
+          id: string
+          is_active: boolean
+          name: string
+          slug: string
+          timezone: string
+        }
+        Insert: {
+          bounds: unknown
+          center: unknown
+          country_code: string
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          name: string
+          slug: string
+          timezone: string
+        }
+        Update: {
+          bounds?: unknown
+          center?: unknown
+          country_code?: string
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          name?: string
+          slug?: string
+          timezone?: string
+        }
+        Relationships: []
+      }
+      comments: {
+        Row: {
+          body: string
+          created_at: string
+          id: string
+          location: unknown
+          post_id: string
+          user_id: string
+        }
+        Insert: {
+          body: string
+          created_at?: string
+          id?: string
+          location?: unknown
+          post_id: string
+          user_id: string
+        }
+        Update: {
+          body?: string
+          created_at?: string
+          id?: string
+          location?: unknown
+          post_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "comments_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: false
+            referencedRelation: "posts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "comments_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      neighborhoods: {
+        Row: {
+          center: unknown
+          city_id: string
+          id: string
+          name: string
+        }
+        Insert: {
+          center: unknown
+          city_id: string
+          id?: string
+          name: string
+        }
+        Update: {
+          center?: unknown
+          city_id?: string
+          id?: string
+          name?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "neighborhoods_city_id_fkey"
+            columns: ["city_id"]
+            isOneToOne: false
+            referencedRelation: "cities"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      post_media: {
+        Row: {
+          created_at: string
+          id: string
+          media_type: Database["public"]["Enums"]["media_type"]
+          moderation_reason: string | null
+          moderation_status: Database["public"]["Enums"]["media_status"]
+          position: number
+          post_id: string
+          storage_path: string
+          thumbnail_path: string | null
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          media_type?: Database["public"]["Enums"]["media_type"]
+          moderation_reason?: string | null
+          moderation_status?: Database["public"]["Enums"]["media_status"]
+          position?: number
+          post_id: string
+          storage_path: string
+          thumbnail_path?: string | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          media_type?: Database["public"]["Enums"]["media_type"]
+          moderation_reason?: string | null
+          moderation_status?: Database["public"]["Enums"]["media_status"]
+          position?: number
+          post_id?: string
+          storage_path?: string
+          thumbnail_path?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "post_media_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: false
+            referencedRelation: "posts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      posts: {
+        Row: {
+          city_id: string
+          created_at: string
+          description: string
+          event_date: string
+          has_custody: boolean
+          id: string
+          location: unknown
+          neighborhood_id: string | null
+          species: Database["public"]["Enums"]["species"]
+          status: Database["public"]["Enums"]["post_status"]
+          title: string
+          type: Database["public"]["Enums"]["post_type"]
+          user_id: string
+        }
+        Insert: {
+          city_id: string
+          created_at?: string
+          description?: string
+          event_date?: string
+          has_custody?: boolean
+          id?: string
+          location: unknown
+          neighborhood_id?: string | null
+          species: Database["public"]["Enums"]["species"]
+          status?: Database["public"]["Enums"]["post_status"]
+          title: string
+          type: Database["public"]["Enums"]["post_type"]
+          user_id: string
+        }
+        Update: {
+          city_id?: string
+          created_at?: string
+          description?: string
+          event_date?: string
+          has_custody?: boolean
+          id?: string
+          location?: unknown
+          neighborhood_id?: string | null
+          species?: Database["public"]["Enums"]["species"]
+          status?: Database["public"]["Enums"]["post_status"]
+          title?: string
+          type?: Database["public"]["Enums"]["post_type"]
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "posts_city_id_fkey"
+            columns: ["city_id"]
+            isOneToOne: false
+            referencedRelation: "cities"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "posts_neighborhood_id_fkey"
+            columns: ["neighborhood_id"]
+            isOneToOne: false
+            referencedRelation: "neighborhoods"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "posts_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      profiles: {
+        Row: {
+          avatar_url: string | null
+          created_at: string
+          display_name: string
+          home_city_id: string | null
+          id: string
+          whatsapp: string | null
+        }
+        Insert: {
+          avatar_url?: string | null
+          created_at?: string
+          display_name: string
+          home_city_id?: string | null
+          id: string
+          whatsapp?: string | null
+        }
+        Update: {
+          avatar_url?: string | null
+          created_at?: string
+          display_name?: string
+          home_city_id?: string | null
+          id?: string
+          whatsapp?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "profiles_home_city_id_fkey"
+            columns: ["home_city_id"]
+            isOneToOne: false
+            referencedRelation: "cities"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      zone_alerts: {
+        Row: {
+          center: unknown
+          city_id: string
+          created_at: string
+          id: string
+          push_token: string
+          radius_m: number
+          species: Database["public"]["Enums"]["species"] | null
+          user_id: string
+        }
+        Insert: {
+          center: unknown
+          city_id: string
+          created_at?: string
+          id?: string
+          push_token: string
+          radius_m: number
+          species?: Database["public"]["Enums"]["species"] | null
+          user_id: string
+        }
+        Update: {
+          center?: unknown
+          city_id?: string
+          created_at?: string
+          id?: string
+          push_token?: string
+          radius_m?: number
+          species?: Database["public"]["Enums"]["species"] | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "zone_alerts_city_id_fkey"
+            columns: ["city_id"]
+            isOneToOne: false
+            referencedRelation: "cities"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "zone_alerts_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      posts_nearby: {
+        Args: {
+          lat: number
+          lng: number
+          p_city_id?: string
+          p_limit?: number
+          p_species?: Database["public"]["Enums"]["species"]
+          p_status?: Database["public"]["Enums"]["post_status"]
+          p_type?: Database["public"]["Enums"]["post_type"]
+          radius_m?: number
+        }
+        Returns: {
+          city_id: string
+          created_at: string
+          description: string
+          distance_m: number
+          event_date: string
+          has_custody: boolean
+          id: string
+          lat: number
+          lng: number
+          neighborhood_id: string
+          species: Database["public"]["Enums"]["species"]
+          status: Database["public"]["Enums"]["post_status"]
+          title: string
+          type: Database["public"]["Enums"]["post_type"]
+          user_id: string
+        }[]
+      }
+      resolve_city: {
+        Args: { lat: number; lng: number }
+        Returns: {
+          bounds: unknown
+          center: unknown
+          country_code: string
+          created_at: string
+          id: string
+          is_active: boolean
+          name: string
+          slug: string
+          timezone: string
+        }[]
+        SetofOptions: {
+          from: "*"
+          to: "cities"
+          isOneToOne: false
+          isSetofReturn: true
+        }
+      }
     }
     Enums: {
-      [_ in never]: never
+      media_status: "pending" | "approved" | "rejected"
+      media_type: "photo" | "video"
+      post_status: "activo" | "resuelto" | "archivado"
+      post_type: "perdido" | "encontrado" | "avistado"
+      species: "gato" | "perro" | "otro"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -173,7 +528,13 @@ export const Constants = {
     Enums: {},
   },
   public: {
-    Enums: {},
+    Enums: {
+      media_status: ["pending", "approved", "rejected"],
+      media_type: ["photo", "video"],
+      post_status: ["activo", "resuelto", "archivado"],
+      post_type: ["perdido", "encontrado", "avistado"],
+      species: ["gato", "perro", "otro"],
+    },
   },
 } as const
 

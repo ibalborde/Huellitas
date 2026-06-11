@@ -68,7 +68,8 @@ the value you want.
 | `npx expo start` | Start the dev server (also `npm run ios` / `android` / `web`) |
 | `npm run typecheck` | `tsc --noEmit` against strict TypeScript |
 | `npm run lint` | ESLint over the whole project |
-| `npm test` | Jest test suite |
+| `npm test` | Jest unit test suite |
+| `npm run test:integration` | Integration tests against local Supabase (requires `supabase start`) |
 | `supabase start` / `supabase stop` | Start / stop the local Supabase containers |
 | `supabase status` | Show local URLs and keys (source for `.env` values) |
 | `supabase gen types typescript --local > src/lib/database.types.ts` | Regenerate DB types — run after **every** migration |
@@ -88,8 +89,8 @@ src/
     supabase.ts       # typed singleton client (throws if env vars are missing)
     database.types.ts # generated via `supabase gen types` — data layer only
 __tests__/            # Jest tests, mirrors source layout (e.g. __tests__/app/)
-docs/                 # BACKLOG.md today; ARCHITECTURE.md, ADRs, API docs later
-supabase/             # config.toml (committed); migrations & seed land next
+docs/                 # BACKLOG.md, ARCHITECTURE.md, decisions/ (ADRs)
+supabase/             # config.toml, migrations/, seed.sql
 ```
 
 `src/components`, `src/features` and `src/theme` are empty skeletons right now;
@@ -110,9 +111,15 @@ raw DB rows. Full rules live in `CLAUDE.md` ("Principios de ingeniería").
 
 ## Testing
 
-- Runner: Jest with the `jest-expo` preset; tests match
-  `**/__tests__/**/*.test.ts(x)`.
-- Component tests use `@testing-library/react-native` **v14**.
+Two suites:
+
+- **Unit** (`npm test`): Jest with the `jest-expo` preset; tests match
+  `**/__tests__/**/*.test.ts(x)`, excluding `__tests__/integration/`.
+  Component tests use `@testing-library/react-native` **v14**.
+- **Integration** (`npm run test:integration`): runs
+  `__tests__/integration/` via `jest.integration.config.js` against the
+  **local Supabase stack** — `supabase start` must be running. These tests
+  assert the database security boundaries (RLS, column grants, RPC clamps).
 
 ### Gotcha: `render()` is async in RNTL 14
 
@@ -133,8 +140,9 @@ Forgetting the `await` produces confusing "element not found" failures. See
 
 - `CLAUDE.md` — project context, product rules and engineering principles.
 - `PLAN.md` — overall plan; `docs/BACKLOG.md` — per-task status.
-- `docs/SPRINTS.md`, `docs/ARCHITECTURE.md`, `docs/API.md`,
-  `docs/decisions/` (ADRs) — created as the relevant work lands.
+- `docs/ARCHITECTURE.md` — high-level architecture, data model and security
+  invariants; `docs/decisions/` — ADRs recording key technical decisions.
+- `docs/SPRINTS.md`, `docs/API.md` — created as the relevant work lands.
 
 ## Roadmap (very short)
 

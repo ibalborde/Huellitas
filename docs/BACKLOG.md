@@ -51,7 +51,12 @@
 
 ### F0.3 — Migration 0001: multi-city schema + RLS + seed
 - **Agent:** database-architect
-- **Status:** todo
+- **Status:** done (security ✅ after 1 fix round · performance ✅ after 1 fix
+  round · tests 8 unit + 20 integration ✅ · docs ✅ ADRs 001-003)
+- **Notes:** schema also ships comments + zone_alerts (cheap now). posts_nearby
+  RPC already implemented here → S1.1 reduced to verification/EXPLAIN pass.
+  Feed queries MUST send `status=in.(activo,resuelto)` explicitly or the
+  partial index is skipped (documented in migration + ARCHITECTURE.md).
 - **Scope:** Full schema per database-architect brief: cities, neighborhoods,
   profiles, posts, post_media (status `pending` by default, MVP auto-approve
   wired), enums, PostGIS geography columns, indexes (GiST on locations),
@@ -127,5 +132,17 @@
 - **Acceptance criteria:** deep-linkable route; loading/error/empty states;
   both themes; gallery images lazy/cached.
 
+## Hardening backlog (from F0.3 security audit — not blocking Fase 0)
+- [ ] Sprint 2: whatsapp exposed via per-post contact RPC + rate limiting
+      instead of table-wide authenticated read (ADR 003 known risk).
+- [ ] Sprint 2 (storage task): bucket policies + `storage_path` prefix check
+      so a media row can't point at another user's storage object.
+- [ ] Sprint 3: cap media rows per post; general rate limiting for
+      posts/comments; reports table (denuncias — already planned).
+- [ ] Fase 2: `location_precision` flag on posts (round to block) — add column
+      early in next migration to avoid painful migration later.
+
 ## Decisions log
-See `docs/decisions/` (ADRs). None yet.
+See `docs/decisions/`: 001 revoke-then-grant column-scoped privileges,
+002 posts_nearby SECURITY DEFINER boundary, 003 public visibility +
+whatsapp protection.
