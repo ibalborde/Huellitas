@@ -1,0 +1,117 @@
+# Huellitas — Backlog
+
+> Owner: orchestrator. Status values: `todo | in-progress | review | done | blocked`.
+> Mandatory flow per task: implementation → security-auditor → performance-analyst →
+> test-engineer (green) → docs-writer → one conventional commit.
+> "Principios de ingeniería" in CLAUDE.md are acceptance criteria for every task.
+
+## Fase 0 — Fundaciones
+
+### F0.1 — Expo scaffold
+- **Agent:** frontend-designer
+- **Status:** todo
+- **Scope:** create-expo-app (managed) with TypeScript strict + expo-router.
+  ESLint + Prettier configured. Folder skeleton: `app/`, `src/components/`,
+  `src/features/`, `src/theme/`, `src/lib/`, `supabase/`.
+- **Acceptance criteria:**
+  - `npx tsc --noEmit` passes with `strict: true`.
+  - `npm run lint` passes.
+  - expo-router renders a placeholder home route.
+  - No `any` anywhere; folder structure matches CLAUDE.md conventions.
+
+### F0.2 — Supabase local environment
+- **Agent:** backend-engineer
+- **Status:** todo
+- **Scope:** Supabase CLI installed, `supabase init`, `supabase start` working
+  against local Docker. Typed client in `src/lib/supabase.ts` reading URL/keys
+  from env (`.env` gitignored, `.env.example` committed). `supabase link` to a
+  cloud project deferred until owner provides access token (tracked as F0.2b).
+- **Acceptance criteria:**
+  - `supabase start` brings up local stack; `supabase status` healthy.
+  - `src/lib/supabase.ts` exports a typed client; no keys hardcoded.
+  - `.env.example` documents required variables.
+
+### F0.2b — Link cloud Supabase project
+- **Agent:** backend-engineer
+- **Status:** blocked (needs owner's Supabase access token / project ref)
+
+### F0.3 — Migration 0001: multi-city schema + RLS + seed
+- **Agent:** database-architect
+- **Status:** todo
+- **Scope:** Full schema per database-architect brief: cities, neighborhoods,
+  profiles, posts, post_media (status `pending` by default, MVP auto-approve
+  wired), enums, PostGIS geography columns, indexes (GiST on locations),
+  RLS on every table, seed for Rosario + neighborhoods.
+- **Acceptance criteria:**
+  - `supabase db reset` applies migration + seed without errors.
+  - RLS enabled on all tables; anonymous can read active posts/approved media
+    only; only owners mutate their rows; unapproved media never readable.
+  - No logic assumes Rosario: city comes from data, not constants.
+  - Types generated into `src/lib/database.types.ts`.
+
+### F0.4 — Theming system + base components
+- **Agent:** frontend-designer
+- **Status:** todo
+- **Scope:** `src/theme/` with semantic tokens (light + dark), ThemeProvider
+  following system scheme, `useTheme` hook. Base components in
+  `src/components/`: Button, Badge, Card, Input, EmptyState.
+- **Acceptance criteria:**
+  - Zero hardcoded hex colors in components (only theme tokens).
+  - Both modes render correctly; AA contrast on both.
+  - Touch targets >= 44pt; accessibility labels on interactive elements.
+  - Components typed, < 150 lines each, variants via props/composition.
+
+### F0.5 — CI pipeline
+- **Agent:** backend-engineer
+- **Status:** todo
+- **Scope:** GitHub Actions workflow: typecheck + lint + jest on every push/PR.
+- **Acceptance criteria:**
+  - Workflow YAML valid; runs `tsc --noEmit`, `lint`, `test` with npm cache.
+  - Fails the build on any error.
+
+## Fase 1 — Sprint 1: Explorar (solo lectura)
+
+### S1.1 — RPC posts_nearby
+- **Agent:** database-architect
+- **Status:** todo
+- **Scope:** SQL function `posts_nearby(lat, lng, radius_m, city, filters…)`
+  with pagination (keyset or offset), filters: type, species, date range.
+  Scoped to active city. Returns posts + first approved photo.
+- **Acceptance criteria:** uses GiST index (EXPLAIN verified), respects RLS,
+  never returns unapproved media; unit-tested with seed data.
+
+### S1.2 — Posts data layer + usePosts hook
+- **Agent:** backend-engineer
+- **Status:** todo
+- **Scope:** `src/features/posts/{domain,data,hooks}/`: domain types,
+  PostsRepository interface + Supabase implementation calling posts_nearby,
+  `usePostsNearby` with React Query infinite pagination.
+- **Acceptance criteria:** UI-ready domain types (no raw rows leak); repo
+  mockable; hook handles loading/error/empty; tests with mocked repo.
+
+### S1.3 — Home screen: map/list toggle + filters
+- **Agent:** frontend-designer
+- **Status:** todo
+- **Scope:** Home route with map/list toggle, filter bar (type, species,
+  radius, date). Filters in local state (Zustand), data via usePostsNearby.
+- **Acceptance criteria:** works logged-out (read never requires account);
+  both themes; accessible filters; list paginated with FlatList perf props.
+
+### S1.4 — Map with status-colored pins + clustering
+- **Agent:** frontend-designer
+- **Status:** todo
+- **Scope:** react-native-maps, pin color by post type/status (theme tokens),
+  basic clustering, recenter-to-city control (active city from CityProvider).
+- **Acceptance criteria:** no Rosario hardcoding; smooth with 200+ pins
+  (performance-analyst gate); both themes.
+
+### S1.5 — Post detail with gallery
+- **Agent:** frontend-designer
+- **Status:** todo
+- **Scope:** `app/post/[id]` route: photo gallery (approved media only),
+  post data, map snippet, contact CTA placeholder (Sprint 2 wires WhatsApp).
+- **Acceptance criteria:** deep-linkable route; loading/error/empty states;
+  both themes; gallery images lazy/cached.
+
+## Decisions log
+See `docs/decisions/` (ADRs). None yet.
