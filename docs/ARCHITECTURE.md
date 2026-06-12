@@ -1,7 +1,8 @@
 # Architecture
 
-High-level view of Huellitas as of F0.4 (theming + base components). This
-document describes what the code does today; planned work is marked as such.
+High-level view of Huellitas as of S1.2 (cities + posts data layer, React
+Query wiring, CityProvider). This document describes what the code does
+today; planned work is marked as such.
 
 ## Client layers (Clean Architecture, pragmatic)
 
@@ -15,10 +16,99 @@ data layer.
 | Application | `src/features/X/hooks/` | Hooks orchestrating repositories with React Query; expose use cases to the UI. |
 | Presentation | `src/features/X/components/`, `app/` | Render and dispatch actions only. No business logic, no direct Supabase calls. |
 
-Shared infrastructure: `src/lib/supabase.ts` (typed singleton client),
+The layers are no longer a skeleton: `src/features/cities/` and
+`src/features/posts/` implement all four. Each feature exposes a public API
+through its `index.ts` (domain types, hooks, providers); the repository
+modules are internal — imported only by the feature's hooks and by
+integration tests. Repositories are created by a factory
+(`createSupabase*Repository(getClient)`) with an injectable client accessor,
+so tests can swap the backend without touching consumers (the `PostsRepository`
+/ `CitiesRepository` interfaces are the seam).
+
+Shared infrastructure: `src/lib/` (see "Client data flow" below),
 `src/theme/` (semantic light/dark tokens), `src/components/` (shared
 presentation-only UI: `Button`, `Badge`, `Card`, `Input`, `EmptyState`),
 `app/` (expo-router routes).
+
+## Client data flow
+
+### Provider stack
+
+`app/_layout.tsx` mounts, outermost first:
+`ThemeProvider` → `QueryClientProvider` → `CityProvider`. The `QueryClient`
+lives at module scope (one instance for the app's lifetime) and is built by
+`src/lib/queryClient.ts` with mobile-sensible defaults: `staleTime` 60 s
+(avoids refetch storms on focus/navigation) and `retry: 1` (more retries just
+delay the error state on flaky mobile networks).
+
+### Lazy Supabase client
+
+`src/lib/supabase.ts` no longer creates the client at module evaluation.
+Repositories import the accessor `getSupabaseClient()`, which creates the
+typed client on first call and throws if `EXPO_PUBLIC_SUPABASE_URL` /
+`EXPO_PUBLIC_SUPABASE_ANON_KEY` are missing. This keeps every data-layer
+module importable without env configuration (unit tests, tooling), and a
+misconfiguration surfaces as an error on the first backend call — inside
+React Query's error handling — instead of crashing app startup.
+
+### Errors and geo primitives
+
+- `src/lib/errors.ts` — `DataError` carries a technical `message` (logs) plus
+  a `userMessage` in es-AR ready to render. Repositories never swallow
+  backend errors: they wrap and rethrow, so React Query exposes them via its
+  error state. `getUserMessage(error)` is the UI-side accessor with a generic
+  es-AR fallback.
+- `src/lib/geo.ts` — pure `Coordinates` type and rounding helpers, importable
+  from any layer including domain.
+- `src/features/cities/data/ewkb.ts` — minimal hex EWKB **point** decoder:
+  PostgREST serializes PostGIS `geography` columns as hex EWKB, and
+  `cities.center` is the only geography the client reads. Any other shape is
+  a `DataError` by design.
+
+### CityProvider (multi-city invariant)
+
+`CityProvider` (`src/features/cities/components/`) loads active cities via
+`useActiveCities` (catalog data, 1 h `staleTime`) and exposes
+`activeCity` through `useActiveCity()`. The default is the **first active
+city returned by the backend** (launch order) — never a hardcoded one.
+`activeCity` is `null` while cities load; consumers gate their queries on it.
+
+City scoping is guaranteed **by construction**: `usePostsNearby` reads the
+active city from the provider itself — callers cannot pass a `cityId` — and
+the query stays disabled until a city is resolved, so unscoped geo queries
+are unrepresentable in the UI layer.
+
+### `usePostsNearby` (infinite nearby feed)
+
+`useInfiniteQuery` over `postsRepository.fetchNearby` (the `posts_nearby`
+RPC). Contracts worth knowing before touching it:
+
+- **Keyset cursor, both-fields-or-neither.** Pagination is keyset over
+  `(distance_m, id)`. The SQL function treats a half cursor as "no cursor"
+  and silently restarts from page 1, so the cursor travels as one
+  `PostsNearbyCursor` object that exists complete or not at all.
+- **Center rounded to 3 decimals (~111 m) in the hook**, before it reaches
+  the query key, so normal GPS jitter does not churn the cache with
+  near-identical entries. The same rounded center is sent to the server: key
+  and request always match.
+- **Radius clamped client-side too** (`RADIUS_MAX_M` = 50 km), defense in
+  depth on top of the SQL cap.
+- **`maxPages: 5`.** Bounds memory AND refetch cost: React Query v5 refetches
+  every cached page **sequentially** when an infinite query refreshes.
+- **Page size** `POSTS_PAGE_SIZE` = 20, clamped 1–200 mirroring the SQL
+  clamp so the `nextCursor` math sees the real page size.
+
+> **Design note for S1.4 (map screen):** the map must NOT consume this
+> infinite query for its pins. With `maxPages`, scrolling the list far enough
+> evicts the *nearest* pages, so the map would drop the closest pins; without
+> `maxPages`, every refresh cascades through all cached pages. The map needs
+> its own viewport-bounded (bounding-box) snapshot query. Feed = paginated
+> list; map = bounding-box snapshot.
+
+> **Security caveat:** the user's (rounded) GPS coordinates live only in
+> in-memory React Query keys today. If query persistence (e.g.
+> `persistQueryClient`) is ever added, location data would be written to
+> disk — re-review this before enabling persistence.
 
 ## Theming
 
@@ -124,15 +214,21 @@ email (profiles are world-readable).
 - **`resolve_city(lat, lng)`** — returns the active city whose `bounds` cover
   the coordinate (app start / GPS). SECURITY INVOKER: cities are public.
 - **`posts_nearby(lat, lng, radius_m, p_city_id, p_type, p_species, p_status,
-  p_limit)`** — posts within a radius, sorted by distance, with `lat`/`lng`/
-  `distance_m` as plain doubles. **SECURITY DEFINER** (ADR 002): PostGIS
-  operators are not leakproof, so under RLS the GiST index is unusable. The
-  function bypasses RLS and inlines the exact public-visibility predicate
+  p_limit, p_after_distance, p_after_id)`** — posts within a radius, ordered
+  by `(distance_m, id)`, with `lat`/`lng`/`distance_m` as plain doubles.
+  Keyset-paginated: `(p_after_distance, p_after_id)` is the last row of the
+  previous page; if either is NULL the cursor is ignored and the result
+  restarts from page 1 (the client sends both or neither). The cursor only
+  skips rows that already satisfy the visibility predicate — it never widens
+  visibility. **SECURITY DEFINER** (ADR 002): PostGIS operators are not
+  leakproof, so under RLS the GiST index is unusable. The function bypasses
+  RLS and inlines the exact public-visibility predicate
   (`status in ('activo','resuelto')` AND active city) — its WHERE clause **is
   a security boundary** and must stay in sync with the public branch of the
   posts SELECT policy. Guards: `p_status = NULL` means the public set, never
-  "any status"; radius capped at 50 km; `p_limit` clamped to 1–200. EXECUTE
-  is revoked from PUBLIC and granted only to anon/authenticated.
+  "any status" (default `'activo'`); radius capped at 50 km; `p_limit`
+  clamped to 1–200 (default 100). EXECUTE is revoked from PUBLIC and granted
+  only to anon/authenticated.
 
 Feed queries through the table (not the RPC) must include the explicit filter
 `status=in.(activo,resuelto)` so the planner can use the partial index

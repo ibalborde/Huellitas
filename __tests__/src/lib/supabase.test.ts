@@ -9,8 +9,12 @@ type SupabaseModule = typeof import('../../../src/lib/supabase');
 const ORIGINAL_ENV = process.env;
 
 /**
- * Loads src/lib/supabase fresh so its module-level env validation runs
- * against the current state of process.env.
+ * Loads src/lib/supabase fresh so getSupabaseClient's memoized instance and
+ * env validation run against the current state of process.env.
+ *
+ * The client is created LAZILY (S1.2): importing the module never throws —
+ * data-layer modules must stay importable without env — but the first
+ * getSupabaseClient() call validates the env.
  */
 function loadSupabaseModule(): SupabaseModule {
   let loadedModule: SupabaseModule | undefined;
@@ -34,7 +38,7 @@ describe('src/lib/supabase env validation', () => {
     delete process.env[SUPABASE_URL_VAR];
     process.env[SUPABASE_ANON_KEY_VAR] = FAKE_ANON_KEY;
 
-    expect(loadSupabaseModule).toThrow(
+    expect(() => loadSupabaseModule().getSupabaseClient()).toThrow(
       /Missing Supabase environment variables.*EXPO_PUBLIC_SUPABASE_URL/s,
     );
   });
@@ -43,7 +47,7 @@ describe('src/lib/supabase env validation', () => {
     process.env[SUPABASE_URL_VAR] = FAKE_URL;
     delete process.env[SUPABASE_ANON_KEY_VAR];
 
-    expect(loadSupabaseModule).toThrow(
+    expect(() => loadSupabaseModule().getSupabaseClient()).toThrow(
       /Missing Supabase environment variables.*EXPO_PUBLIC_SUPABASE_ANON_KEY/s,
     );
   });
@@ -52,24 +56,30 @@ describe('src/lib/supabase env validation', () => {
     delete process.env[SUPABASE_URL_VAR];
     delete process.env[SUPABASE_ANON_KEY_VAR];
 
-    expect(loadSupabaseModule).toThrow('Missing Supabase environment variables');
+    expect(() => loadSupabaseModule().getSupabaseClient()).toThrow(
+      'Missing Supabase environment variables',
+    );
   });
 
   it('treats empty strings as missing variables', () => {
     process.env[SUPABASE_URL_VAR] = '';
     process.env[SUPABASE_ANON_KEY_VAR] = '';
 
-    expect(loadSupabaseModule).toThrow('Missing Supabase environment variables');
+    expect(() => loadSupabaseModule().getSupabaseClient()).toThrow(
+      'Missing Supabase environment variables',
+    );
   });
 
-  it('exports a client when both variables are present', () => {
+  it('returns a memoized client when both variables are present', () => {
     process.env[SUPABASE_URL_VAR] = FAKE_URL;
     process.env[SUPABASE_ANON_KEY_VAR] = FAKE_ANON_KEY;
 
-    const { supabase } = loadSupabaseModule();
+    const { getSupabaseClient } = loadSupabaseModule();
+    const client = getSupabaseClient();
 
-    expect(supabase).toBeDefined();
-    expect(typeof supabase.from).toBe('function');
-    expect(supabase.auth).toBeDefined();
+    expect(client).toBeDefined();
+    expect(typeof client.from).toBe('function');
+    expect(client.auth).toBeDefined();
+    expect(getSupabaseClient()).toBe(client);
   });
 });

@@ -9,9 +9,17 @@
 module.exports = {
   testEnvironment: 'node',
   testMatch: ['**/__tests__/integration/**/*.integration.test.ts'],
+  // Same "@/" alias as tsconfig paths, so repository modules under test
+  // (src/features/*/data) resolve their imports.
+  moduleNameMapper: {
+    '^@/(.*)$': '<rootDir>/src/$1',
+  },
   transform: {
     '\\.[jt]sx?$': ['babel-jest', { presets: ['babel-preset-expo'] }],
   },
+  // babel-preset-expo rewrites process.env.EXPO_PUBLIC_* reads into imports
+  // from expo/virtual/env, which ships as ESM — let jest transform it.
+  transformIgnorePatterns: ['node_modules/(?!expo/virtual/)'],
   // Real network + auth admin calls: give each test room to breathe.
   testTimeout: 30000,
 };

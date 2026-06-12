@@ -112,12 +112,13 @@
 
 ### S1.2 — Posts data layer + usePosts hook
 - **Agent:** backend-engineer
-- **Status:** todo
-- **Scope:** `src/features/posts/{domain,data,hooks}/`: domain types,
-  PostsRepository interface + Supabase implementation calling posts_nearby,
-  `usePostsNearby` with React Query infinite pagination.
-- **Acceptance criteria:** UI-ready domain types (no raw rows leak); repo
-  mockable; hook handles loading/error/empty; tests with mocked repo.
+- **Status:** done (security ✅ performance ✅ after 1 fix round · tests
+  106 unit + 29 integration ✅ · docs ✅)
+- **Notes:** also shipped cities feature + CityProvider (city scoping by
+  construction) + lazy supabase client + React Query/Zustand install.
+  S1.4 MUST use its own viewport-bounded query for map pins, never the
+  infinite feed query (documented in ARCHITECTURE.md). GPS only in
+  in-memory query keys — re-review before adding RQ persistence.
 
 ### S1.3 — Home screen: map/list toggle + filters
 - **Agent:** frontend-designer
