@@ -116,7 +116,7 @@ describe('usePostsNearby', () => {
         center: CENTER,
         cityId: TEST_CITY.id,
         radiusM: RADIUS_DEFAULT_M,
-        filters: { type: undefined, species: undefined },
+        filters: { type: undefined, species: undefined, eventFrom: undefined, eventTo: undefined },
         limit: POSTS_PAGE_SIZE,
         cursor: undefined,
       });
@@ -203,12 +203,18 @@ describe('usePostsNearby', () => {
       );
     });
 
-    it('passes a radius below the cap through unchanged, along with type/species', async () => {
+    it('passes a radius below the cap through unchanged, along with content filters', async () => {
       const { result } = await renderHook(
         () =>
           usePostsNearby({
             center: CENTER,
-            filters: { radiusM: 1_000, type: 'encontrado', species: 'gato' },
+            filters: {
+              radiusM: 1_000,
+              type: 'encontrado',
+              species: 'gato',
+              eventFrom: '2026-06-01',
+              eventTo: '2026-06-07',
+            },
           }),
         { wrapper: createWrapper() },
       );
@@ -218,7 +224,33 @@ describe('usePostsNearby', () => {
       expect(fetchNearbyMock).toHaveBeenCalledWith(
         expect.objectContaining({
           radiusM: 1_000,
-          filters: { type: 'encontrado', species: 'gato' },
+          filters: {
+            type: 'encontrado',
+            species: 'gato',
+            eventFrom: '2026-06-01',
+            eventTo: '2026-06-07',
+          },
+        }),
+      );
+    });
+  });
+
+  describe('event-date range', () => {
+    it('refetches when the range changes (eventFrom/eventTo are part of the query key)', async () => {
+      const { result, rerender } = await renderHook(
+        ({ eventFrom }: { eventFrom: string | undefined }) =>
+          usePostsNearby({ center: CENTER, filters: { eventFrom, eventTo: '2026-06-07' } }),
+        { wrapper: createWrapper(), initialProps: { eventFrom: undefined } },
+      );
+      await waitFor(() => expect(result.current.isSuccess).toBe(true));
+      expect(fetchNearbyMock).toHaveBeenCalledTimes(1);
+
+      await rerender({ eventFrom: '2026-06-01' });
+
+      await waitFor(() => expect(fetchNearbyMock).toHaveBeenCalledTimes(2));
+      expect(fetchNearbyMock).toHaveBeenLastCalledWith(
+        expect.objectContaining({
+          filters: expect.objectContaining({ eventFrom: '2026-06-01', eventTo: '2026-06-07' }),
         }),
       );
     });

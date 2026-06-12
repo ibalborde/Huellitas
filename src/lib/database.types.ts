@@ -350,6 +350,8 @@ export type Database = {
           p_after_distance?: number
           p_after_id?: string
           p_city_id?: string
+          p_event_from?: string
+          p_event_to?: string
           p_limit?: number
           p_species?: Database["public"]["Enums"]["species"]
           p_status?: Database["public"]["Enums"]["post_status"]

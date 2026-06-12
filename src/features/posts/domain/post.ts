@@ -38,4 +38,11 @@ export interface PostFilters {
   type?: PostType;
   species?: Species;
   radiusM?: number;
+  /**
+   * Inclusive event-date range, ISO date `YYYY-MM-DD` (same representation as
+   * `Post.eventDate`). Plain strings on purpose: they compare and serialize
+   * stably in React Query keys — no Date objects, no timezone math.
+   */
+  eventFrom?: string;
+  eventTo?: string;
 }

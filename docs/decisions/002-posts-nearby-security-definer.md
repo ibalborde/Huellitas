@@ -5,6 +5,10 @@ Amended in S1.1 (migration `20260611223009_posts_nearby_keyset_pagination.sql`):
 function recreated with a 10-parameter signature adding a keyset cursor
 (`p_after_distance`, `p_after_id`) — pure AND-conjunct, boundary predicate
 unchanged, re-reviewed by security-auditor per this ADR's mandate.
+Amended in S1.3a (migration `20260612120000_posts_nearby_event_date_filter.sql`):
+recreated with a 12-parameter signature adding `p_event_from`/`p_event_to`
+date filters — pure AND-conjuncts on public data, boundary predicate
+unchanged, re-reviewed and approved per this ADR's mandate.
 
 ## Context
 

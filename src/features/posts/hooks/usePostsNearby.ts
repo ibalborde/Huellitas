@@ -27,6 +27,9 @@ interface PostsNearbyKeyParams {
   radiusM: number;
   type: PostType | null;
   species: Species | null;
+  /** Inclusive event-date range, ISO `YYYY-MM-DD` strings (stable in keys). */
+  eventFrom: string | null;
+  eventTo: string | null;
 }
 
 export const postsKeys = {
@@ -55,6 +58,8 @@ export function usePostsNearby({ center, filters }: UsePostsNearbyParams) {
   const radiusM = Math.min(filters?.radiusM ?? RADIUS_DEFAULT_M, RADIUS_MAX_M);
   const type = filters?.type ?? null;
   const species = filters?.species ?? null;
+  const eventFrom = filters?.eventFrom ?? null;
+  const eventTo = filters?.eventTo ?? null;
 
   return useInfiniteQuery({
     queryKey: postsKeys.nearby({
@@ -63,6 +68,8 @@ export function usePostsNearby({ center, filters }: UsePostsNearbyParams) {
       radiusM,
       type,
       species,
+      eventFrom,
+      eventTo,
     }),
     enabled: activeCity !== null,
     maxPages: POSTS_NEARBY_MAX_PAGES,
@@ -79,6 +86,8 @@ export function usePostsNearby({ center, filters }: UsePostsNearbyParams) {
         filters: {
           type: type ?? undefined,
           species: species ?? undefined,
+          eventFrom: eventFrom ?? undefined,
+          eventTo: eventTo ?? undefined,
         },
         limit: POSTS_PAGE_SIZE,
         cursor: pageParam ?? undefined,

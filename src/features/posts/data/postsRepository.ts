@@ -25,11 +25,11 @@ export interface FetchNearbyParams {
   /** Search radius in meters; the server caps it at 50 km. */
   radiusM: number;
   /**
-   * Optional content filters. Narrowed to type/species: the radius is a
-   * geometry parameter of the query, not a row filter, so it travels as
-   * `radiusM` above (PostFilters.radiusM is resolved by the hook).
+   * Optional content filters (type/species/event-date range). The radius is
+   * excluded: it is a geometry parameter of the query, not a row filter, so
+   * it travels as `radiusM` above (PostFilters.radiusM is resolved by the hook).
    */
-  filters?: Pick<PostFilters, 'type' | 'species'>;
+  filters?: Pick<PostFilters, 'type' | 'species' | 'eventFrom' | 'eventTo'>;
   /** Page size, 1-200 (clamped both here and server-side). Default 20. */
   limit?: number;
   /** Omit for the first page. */
@@ -111,6 +111,10 @@ export function createSupabasePostsRepository(
         p_city_id: cityId,
         p_type: filters?.type,
         p_species: filters?.species,
+        // Inclusive ISO-date range; undefined values are dropped by the JSON
+        // body serialization, so the SQL defaults (no date bound) apply.
+        p_event_from: filters?.eventFrom,
+        p_event_to: filters?.eventTo,
         p_limit: pageSize,
         // Together-or-neither: both fields come from the same cursor object,
         // so a half cursor (silent reset to page 1) is unrepresentable.

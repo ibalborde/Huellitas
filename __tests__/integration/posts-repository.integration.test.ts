@@ -12,6 +12,7 @@
  */
 import {
   createSupabasePostsRepository,
+  type FetchNearbyParams,
   type PostsRepository,
 } from '../../src/features/posts/data/postsRepository';
 import type { Database } from '../../src/lib/database.types';
@@ -115,7 +116,7 @@ describe('S1.2 integration — posts repository mapping & keyset pagination', ()
   function fetchPage(params?: {
     limit?: number;
     cursor?: { afterDistance: number; afterId: string };
-    filters?: { type?: 'perdido' | 'encontrado' | 'avistado'; species?: 'gato' | 'perro' | 'otro' };
+    filters?: FetchNearbyParams['filters'];
   }) {
     return repository.fetchNearby({
       center: SEARCH_CENTER,
@@ -186,5 +187,23 @@ describe('S1.2 integration — posts repository mapping & keyset pagination', ()
 
     const byType = await fetchPage({ limit: 10, filters: { type: 'avistado' } });
     expect(byType.posts.map((post) => post.id)).toEqual([createdPostIds[2]]);
+  });
+
+  // S1.3a — event-date range filter. All fixtures share EVENT_DATE, so a
+  // range that brackets it returns everything and a disjoint range nothing.
+  it('applies the event-date range filter (inclusive bounds)', async () => {
+    const inRange = await fetchPage({
+      limit: 10,
+      filters: { eventFrom: EVENT_DATE, eventTo: EVENT_DATE },
+    });
+    expect(inRange.posts.map((post) => post.id).sort()).toEqual([...createdPostIds].sort());
+  });
+
+  it('excludes posts outside the event-date range (each bound works alone)', async () => {
+    const afterRange = await fetchPage({ limit: 10, filters: { eventFrom: '2026-06-02' } });
+    expect(afterRange.posts).toEqual([]);
+
+    const beforeRange = await fetchPage({ limit: 10, filters: { eventTo: '2026-05-31' } });
+    expect(beforeRange.posts).toEqual([]);
   });
 });

@@ -50,6 +50,13 @@ const INACTIVE_CITY_POINT = { lat: -31.42, lng: -64.18 } as const;
 const INACTIVE_CITY_BOUNDS =
   'SRID=4326;POLYGON((-64.30 -31.30, -64.05 -31.30, -64.05 -31.55, -64.30 -31.55, -64.30 -31.30))';
 
+/**
+ * Distinct event_date for the archivado fixture only, so an event-date range
+ * matching it matches NO public post — pins that p_event_from/p_event_to
+ * cannot widen the status clamp (S1.3a audit case).
+ */
+const ARCHIVADO_EVENT_DATE = '2025-12-24';
+
 describe('F0.3 integration — posts_nearby security boundary & moderation', () => {
   let service: TypedClient;
   let anon: TypedClient;
@@ -121,6 +128,7 @@ describe('F0.3 integration — posts_nearby security boundary & moderation', () 
       species: 'otro',
       status: 'archivado',
       title: 'IT archivado avistado otro',
+      event_date: ARCHIVADO_EVENT_DATE,
       location: wktPoint(ROSARIO.lng, ROSARIO.lat + 0.001),
     });
 
@@ -254,6 +262,22 @@ describe('F0.3 integration — posts_nearby security boundary & moderation', () 
       expect(error).toBeNull();
       const ids = (data ?? []).map((row) => row.id);
       expect(ids).toEqual([resueltoPostId]);
+    });
+
+    it('an event-date range matching only the archivado post still returns zero of our rows', async () => {
+      const { data, error } = await postsNearby(anon, {
+        lat: ROSARIO.lat,
+        lng: ROSARIO.lng,
+        p_status: null,
+        p_event_from: ARCHIVADO_EVENT_DATE,
+        p_event_to: ARCHIVADO_EVENT_DATE,
+      });
+
+      expect(error).toBeNull();
+      const ids = (data ?? []).map((row) => row.id);
+      expect(ids).not.toContain(archivadoPostId);
+      // None of this suite's posts is both public AND inside the range.
+      expect(ids.filter((id) => createdPostIds.includes(id))).toEqual([]);
     });
 
     it('respects p_limit', async () => {
