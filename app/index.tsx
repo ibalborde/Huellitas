@@ -1,25 +1,46 @@
 import { StyleSheet, Text, View } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { Badge } from '@/components';
-import { useTheme, useThemedStyles, type Theme } from '@/theme';
+import { useActiveCity } from '@/features/cities';
+import {
+  PostFiltersBar,
+  PostsFeed,
+  PostsMap,
+  ViewModeToggle,
+  useFiltersStore,
+} from '@/features/posts';
+import { useThemedStyles, type Theme } from '@/theme';
 
-// Placeholder screen. Replaced by the map/feed in F1.
+/**
+ * Home: header + map/list toggle + filter bar over the nearby feed.
+ * Public by design — browsing never requires an account.
+ */
 export default function HomeScreen() {
-  const theme = useTheme();
   const styles = useThemedStyles(createStyles);
+  const { activeCity } = useActiveCity();
+  const viewMode = useFiltersStore((state) => state.viewMode);
 
   return (
-    <View style={styles.container}>
-      <Text accessibilityRole="header" style={[styles.title, { color: theme.colors.brand }]}>
-        Huellitas
-      </Text>
-      <Text style={styles.subtitle}>Estamos preparando todo. Volvé pronto.</Text>
-      <View style={styles.badges}>
-        <Badge label="Perdido" variant="lost" />
-        <Badge label="Encontrado" variant="found" />
-        <Badge label="Avistado" variant="sighted" />
+    <SafeAreaView style={styles.container} edges={['top']}>
+      <View style={styles.header}>
+        <Text accessibilityRole="header" style={styles.title}>
+          Huellitas
+        </Text>
+        <Text
+          style={styles.city}
+          accessibilityLabel={
+            activeCity === null ? 'Buscando tu ciudad' : `Ciudad: ${activeCity.name}`
+          }
+        >
+          {activeCity === null ? 'Buscando tu ciudad…' : `📍 ${activeCity.name}`}
+        </Text>
       </View>
-    </View>
+      <View style={styles.toggle}>
+        <ViewModeToggle />
+      </View>
+      <PostFiltersBar />
+      {viewMode === 'map' ? <PostsMap /> : <PostsFeed />}
+    </SafeAreaView>
   );
 }
 
@@ -27,22 +48,25 @@ const createStyles = (theme: Theme) =>
   StyleSheet.create({
     container: {
       flex: 1,
-      alignItems: 'center',
-      justifyContent: 'center',
-      gap: theme.spacing.sm,
       backgroundColor: theme.colors.background,
-      padding: theme.spacing.xl,
+      gap: theme.spacing.md,
+    },
+    header: {
+      flexDirection: 'row',
+      alignItems: 'baseline',
+      justifyContent: 'space-between',
+      paddingHorizontal: theme.spacing.lg,
+      paddingTop: theme.spacing.sm,
     },
     title: {
       ...theme.typography.title,
+      color: theme.colors.brand,
     },
-    subtitle: {
-      ...theme.typography.body,
+    city: {
+      ...theme.typography.label,
       color: theme.colors.textSecondary,
     },
-    badges: {
-      flexDirection: 'row',
-      gap: theme.spacing.sm,
-      marginTop: theme.spacing.lg,
+    toggle: {
+      paddingHorizontal: theme.spacing.lg,
     },
   });

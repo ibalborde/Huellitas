@@ -354,7 +354,6 @@ export type Database = {
           p_event_to?: string
           p_limit?: number
           p_species?: Database["public"]["Enums"]["species"]
-          p_status?: Database["public"]["Enums"]["post_status"]
           p_type?: Database["public"]["Enums"]["post_type"]
           radius_m?: number
         }
@@ -541,4 +540,3 @@ export const Constants = {
     },
   },
 } as const
-

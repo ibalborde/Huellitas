@@ -9,6 +9,13 @@ Amended in S1.3a (migration `20260612120000_posts_nearby_event_date_filter.sql`)
 recreated with a 12-parameter signature adding `p_event_from`/`p_event_to`
 date filters — pure AND-conjuncts on public data, boundary predicate
 unchanged, re-reviewed and approved per this ADR's mandate.
+Amended in security hardening (migration `20260615000001_security_hardening.sql`):
+`p_status` parameter removed entirely (CRIT-1 finding: the parameter
+accepted `'archivado'`, relying on defense-in-depth from the first
+AND-conjunct; removing it makes the SECURITY BOUNDARY self-contained).
+The function now returns both `'activo'` and `'resuelto'` posts unconditionally
+(the TypeScript repo never passed `p_status`; behavior now matches the intent
+of the public RLS policy). Re-reviewed by security-auditor.
 
 ## Context
 
@@ -59,3 +66,7 @@ by `anon`:
   drift between the function and the RLS policy fails CI.
 - We accept the maintenance cost of one deliberate RLS bypass in exchange for
   index-backed performance on the app's primary query path.
+- The `p_status` parameter has been permanently removed (migration
+  `20260615000001`). To expose status-level filtering in a future feature,
+  add a new parameter constrained to the public set at the function level
+  (via a plpgsql language check) — do not restore the old parameter silently.

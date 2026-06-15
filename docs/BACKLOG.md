@@ -122,7 +122,16 @@
 
 ### S1.3 — Home screen: map/list toggle + filters
 - **Agent:** frontend-designer
-- **Status:** todo
+- **Status:** done (security ✅ after fixes · performance ✅ after fixes · tests 175 total ✅ · docs ✅)
+- **Notes:** filtersStore (Zustand, no persist), usePostFilters, FilterChip,
+  ViewModeToggle, PostFiltersBar, PostsFeed, PostsList, PostCard, PostsMap
+  (placeholder — S1.4 replaces). Security hardening migration
+  20260615000001: removed p_status from posts_nearby (CRIT-1), hardened
+  post_media RLS explicit status check (HIGH-2). Performance: useCallback
+  on PostsFeed handlers; center changed to Coordinates|null type (self-
+  enforcing disabled guard). useThemedStyles cross-instance cache deferred
+  to dedicated task (flagged by perf review). MED-2 (SafetySheet before
+  contact flow) tracked as prerequisite for Sprint 2 contact feature.
 - **Scope:** Home route with map/list toggle, filter bar (type, species,
   radius, date). Filters in local state (Zustand), data via usePostsNearby.
 - **Acceptance criteria:** works logged-out (read never requires account);

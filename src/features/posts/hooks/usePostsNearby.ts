@@ -21,9 +21,9 @@ const COORD_QUERY_PRECISION = 3;
 const POSTS_NEARBY_MAX_PAGES = 5;
 
 interface PostsNearbyKeyParams {
-  /** null while the active city is still resolving (query stays disabled). */
+  /** null while the active city or center is still resolving (query stays disabled). */
   cityId: string | null;
-  center: Coordinates;
+  center: Coordinates | null;
   radiusM: number;
   type: PostType | null;
   species: Species | null;
@@ -38,8 +38,12 @@ export const postsKeys = {
 };
 
 export interface UsePostsNearbyParams {
-  /** Search center: user GPS fix, or the active city's center as fallback. */
-  center: Coordinates;
+  /**
+   * Search center: user GPS fix, or the active city's center as fallback.
+   * null while the center is still resolving — the query is disabled until
+   * both the city and a concrete center are known (type-enforced guard).
+   */
+  center: Coordinates | null;
   filters?: PostFilters;
 }
 
@@ -53,7 +57,7 @@ export interface UsePostsNearbyParams {
  */
 export function usePostsNearby({ center, filters }: UsePostsNearbyParams) {
   const { activeCity } = useActiveCity();
-  const roundedCenter = roundCoordinates(center, COORD_QUERY_PRECISION);
+  const roundedCenter = center !== null ? roundCoordinates(center, COORD_QUERY_PRECISION) : null;
   // Defense in depth: the server also caps the radius (posts_nearby SQL).
   const radiusM = Math.min(filters?.radiusM ?? RADIUS_DEFAULT_M, RADIUS_MAX_M);
   const type = filters?.type ?? null;
@@ -71,13 +75,13 @@ export function usePostsNearby({ center, filters }: UsePostsNearbyParams) {
       eventFrom,
       eventTo,
     }),
-    enabled: activeCity !== null,
+    enabled: activeCity !== null && center !== null,
     maxPages: POSTS_NEARBY_MAX_PAGES,
     initialPageParam: null as PostsNearbyCursor | null,
     queryFn: ({ pageParam }) => {
-      if (activeCity === null) {
-        // Unreachable: the query is disabled until a city is active.
-        throw new Error('usePostsNearby ran without an active city');
+      if (activeCity === null || roundedCenter === null) {
+        // Unreachable: the query is disabled until city and center are known.
+        throw new Error('usePostsNearby ran without an active city or center');
       }
       return postsRepository.fetchNearby({
         center: roundedCenter,
